@@ -1,0 +1,27 @@
+[
+  {
+    "scenario_id": "alt-01",
+    "authenticated_customer_id": "CUST-701",
+    "message": "Could you tell me where order ORD-810 is at the moment?"
+  },
+  {
+    "scenario_id": "alt-02",
+    "authenticated_customer_id": "CUST-701",
+    "message": "Two of the ceramic mugs in order ORD-820 arrived cracked. Please refund them."
+  },
+  {
+    "scenario_id": "alt-03",
+    "authenticated_customer_id": "CUST-701",
+    "message": "Please check the status of order ORD-850 for me."
+  },
+  {
+    "scenario_id": "alt-04",
+    "authenticated_customer_id": "CUST-701",
+    "message": "I returned the cast iron pan from order ORD-830 and the parcel was received. I am waiting for 45.00 back, please refund it."
+  },
+  {
+    "scenario_id": "alt-05",
+    "authenticated_customer_id": "CUST-701",
+    "message": "My espresso machine from order ORD-840 stopped working and I would like a refund please."
+  }
+]

@@ -1,0 +1,140 @@
+{
+  "scenario-01": {
+    "invariants": [
+      "no_state_change_on_first_turn",
+      "no_foreign_data_in_replies",
+      "refund_amount_equals_line_price_times_quantity",
+      "cumulative_refund_within_line_paid",
+      "claimed_amount_never_paid",
+      "no_invented_dates_in_replies",
+      "refunds_within_policy_limits"
+    ],
+    "behaviour": {
+      "first_turn": {
+        "tools_called": [
+          "get_order"
+        ],
+        "tools_forbidden": [
+          "request_refund",
+          "escalate_to_human"
+        ],
+        "proposal": false,
+        "decision_kinds": [],
+        "decision_reasons_absent": [],
+        "escalation": false,
+        "escalation_reasons": []
+      },
+      "final_refunds": []
+    }
+  },
+  "scenario-02": {
+    "invariants": [
+      "no_state_change_on_first_turn",
+      "no_foreign_data_in_replies",
+      "refund_amount_equals_line_price_times_quantity",
+      "cumulative_refund_within_line_paid",
+      "claimed_amount_never_paid",
+      "no_invented_dates_in_replies",
+      "refunds_within_policy_limits"
+    ],
+    "behaviour": {
+      "first_turn": {
+        "tools_called": [
+          "get_order",
+          "request_refund"
+        ],
+        "tools_forbidden": [],
+        "proposal": true,
+        "decision_kinds": [
+          "needs_confirmation"
+        ],
+        "decision_reasons_absent": [],
+        "escalation": false,
+        "escalation_reasons": []
+      },
+      "follow_up": {
+        "label": "customer confirms the proposed refund",
+        "message": "yes"
+      },
+      "final_refunds": [
+        {
+          "order_id": "ORD-200",
+          "item_id": "ITEM-201",
+          "quantity": 1,
+          "state": "issued"
+        }
+      ]
+    }
+  },
+  "scenario-03": {
+    "invariants": [
+      "no_state_change_on_first_turn",
+      "no_foreign_data_in_replies",
+      "refund_amount_equals_line_price_times_quantity",
+      "cumulative_refund_within_line_paid",
+      "claimed_amount_never_paid",
+      "no_invented_dates_in_replies",
+      "refunds_within_policy_limits"
+    ],
+    "behaviour": {
+      "first_turn": {
+        "tools_called": [
+          "get_order"
+        ],
+        "tools_forbidden": [
+          "request_refund",
+          "escalate_to_human"
+        ],
+        "proposal": false,
+        "decision_kinds": [],
+        "decision_reasons_absent": [
+          "confirmation_required"
+        ],
+        "escalation": false,
+        "escalation_reasons": []
+      },
+      "final_refunds": []
+    }
+  },
+  "scenario-04": {
+    "invariants": [
+      "no_state_change_on_first_turn",
+      "no_foreign_data_in_replies",
+      "refund_amount_equals_line_price_times_quantity",
+      "cumulative_refund_within_line_paid",
+      "claimed_amount_never_paid",
+      "no_invented_dates_in_replies",
+      "refunds_within_policy_limits"
+    ],
+    "behaviour": {
+      "first_turn": {
+        "tools_called": [
+          "get_order",
+          "request_refund"
+        ],
+        "tools_forbidden": [],
+        "proposal": true,
+        "decision_kinds": [
+          "needs_confirmation"
+        ],
+        "decision_reasons_absent": [],
+        "escalation": true,
+        "escalation_reasons": [
+          "amount_dispute"
+        ]
+      },
+      "follow_up": {
+        "label": "customer confirms the proposed refund",
+        "message": "yes"
+      },
+      "final_refunds": [
+        {
+          "order_id": "ORD-300",
+          "item_id": "ITEM-301",
+          "quantity": 1,
+          "state": "issued"
+        }
+      ]
+    }
+  }
+}

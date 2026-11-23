@@ -1,0 +1,12 @@
+[
+  {
+    "customer_id": "CUST-701",
+    "name": "Lena Hoffmann",
+    "email": "lena.hoffmann@example.test"
+  },
+  {
+    "customer_id": "CUST-702",
+    "name": "Tomas Varga",
+    "email": "tomas.varga@example.test"
+  }
+]

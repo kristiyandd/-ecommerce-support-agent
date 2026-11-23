@@ -1,0 +1,96 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ecommerce-support-agent"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = ["pydantic==2.14.4"]
+
+[tool.setuptools.packages.find]
+where = ["src", "."]
+include = ["support_agent*", "mock_env*"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+mock_env = "mock_env"
+
+[tool.setuptools.package-data]
+mock_env = ["**/*.json"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["F", "E", "W", "I", "UP", "B", "C4", "SIM", "T20", "RUF", "C90", "N", "PT", "RET", "PIE", "ERA", "S",
+          "BLE", "TRY", "ARG", "DTZ", "PLR0912", "PLR0913", "PLR2004"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 8
+
+[tool.ruff.lint.isort]
+known-first-party = ["support_agent", "mock_env", "scripts"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/support_agent/cli.py" = ["T20"]
+"tests/**" = ["S101", "PLR2004"]
+"mock_env/**/test*.py" = ["S101", "PLR2004"]
+
+[tool.mypy]
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["src"]
+python_version = "3.13"
+mypy_path = "src"
+exclude = ["mock_env"]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "mock_env"]
+pythonpath = ["src", "."]
+addopts = "-q --import-mode=importlib"
+python_files = ["test_*.py", "*_test.py"]
+
+[tool.coverage.run]
+source = ["src", "mock_env"]
+branch = true
+omit = ["*/tests/*", "*/test_*.py"]
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.importlinter]
+root_packages = ["support_agent", "mock_env"]
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Layers: entry points -> composition -> adapters -> application -> policy -> domain"
+type = "layers"
+layers = [
+    "support_agent.cli",
+    "support_agent.evaluation | support_agent.harness",
+    "support_agent.harness_checks",
+    "support_agent.composition",
+    "support_agent.adapters",
+    "support_agent.application",
+    "support_agent.policy",
+    "support_agent.domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "Domain and policy are pure: no frameworks, no mock environment"
+type = "forbidden"
+source_modules = ["support_agent.domain", "support_agent.policy"]
+forbidden_modules = ["pydantic", "mock_env"]
+
+[[tool.importlinter.contracts]]
+name = "Application reaches data only through ports, never the mock environment"
+type = "forbidden"
+source_modules = ["support_agent.application"]
+forbidden_modules = ["mock_env"]

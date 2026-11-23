@@ -1,0 +1,11 @@
+{
+  "version": "policy/v1",
+  "currency": "EUR",
+  "approval_threshold": "50.00",
+  "customer_auto_refund_cap": "100.00",
+  "refundable_statuses": [
+    "delivered",
+    "returned"
+  ],
+  "note": "50.00 and 100.00 EUR are placeholders for the business to set. approval_threshold applies to the cumulative issued refunds of an order plus the current request; customer_auto_refund_cap applies to all issued refunds of a customer, with no time window because the records carry no dates."
+}

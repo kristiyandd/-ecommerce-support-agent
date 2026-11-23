@@ -1,0 +1,88 @@
+[
+  {
+    "order_id": "ORD-810",
+    "customer_id": "CUST-701",
+    "status": "in_transit",
+    "currency": "EUR",
+    "total": 38.4,
+    "items": [
+      {
+        "item_id": "ITEM-811",
+        "name": "Bamboo Cutting Board",
+        "quantity": 1,
+        "unit_price": 38.4
+      }
+    ],
+    "shipping": {
+      "carrier": "UPS",
+      "tracking_number": "UPS-8810-ALT"
+    }
+  },
+  {
+    "order_id": "ORD-820",
+    "customer_id": "CUST-701",
+    "status": "delivered",
+    "currency": "EUR",
+    "total": 52.25,
+    "items": [
+      {
+        "item_id": "ITEM-821",
+        "name": "Ceramic Mug",
+        "quantity": 3,
+        "unit_price": 11.35
+      },
+      {
+        "item_id": "ITEM-822",
+        "name": "Linen Napkin Set",
+        "quantity": 1,
+        "unit_price": 18.2
+      }
+    ]
+  },
+  {
+    "order_id": "ORD-830",
+    "customer_id": "CUST-701",
+    "status": "returned",
+    "currency": "EUR",
+    "total": 41.6,
+    "items": [
+      {
+        "item_id": "ITEM-831",
+        "name": "Cast Iron Pan",
+        "quantity": 1,
+        "unit_price": 41.6,
+        "return_status": "received"
+      }
+    ]
+  },
+  {
+    "order_id": "ORD-840",
+    "customer_id": "CUST-701",
+    "status": "delivered",
+    "currency": "EUR",
+    "total": 189.0,
+    "items": [
+      {
+        "item_id": "ITEM-841",
+        "name": "Espresso Machine",
+        "quantity": 1,
+        "unit_price": 189.0
+      }
+    ]
+  },
+  {
+    "order_id": "ORD-850",
+    "customer_id": "CUST-702",
+    "status": "delivered",
+    "currency": "EUR",
+    "total": 77.5,
+    "items": [
+      {
+        "item_id": "ITEM-851",
+        "name": "Standing Desk Lamp",
+        "quantity": 1,
+        "unit_price": 77.5
+      }
+    ]
+  }
+]
