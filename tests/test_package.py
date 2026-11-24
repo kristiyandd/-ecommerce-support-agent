@@ -9,6 +9,7 @@ from scripts.package import build_archive, files_to_archive, is_excluded, write_
 @pytest.mark.parametrize(
     "relative",
     [
+        ".git/objects/ab/cdef",
         ".venv/Lib/x.py",
         "src/pkg/__pycache__/a.pyc",
         "src/ecommerce_support_agent.egg-info/PKG-INFO",

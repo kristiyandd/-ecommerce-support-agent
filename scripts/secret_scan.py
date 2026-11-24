@@ -34,9 +34,14 @@ KNOWN_FAKE_VALUES = frozenset(
         "AKIAIOSFODNN7EXAMPLE",  # pragma: allowlist secret
         "sk-ant-api03-abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGH",  # pragma: allowlist secret
         "sk-ant-api03-Zq8xR2mT5vLw9KpN3bYc7HdF1gJs4QeUa6",  # pragma: allowlist secret
+        "sk-ant-api03-abcdefABCDEF0123456789abcdefABCDEF0123456789",  # pragma: allowlist secret
+        "AKIASIAIAFBASAAKAIAE",  # pragma: allowlist secret
+        "AKIASIAIANBASAAKAIAE",  # pragma: allowlist secret
+        "AKIAUUEQCAIRAAAAAAAA",  # pragma: allowlist secret
     }
 )
-"""Public documentation example and fake keys typed in this session to prove the scan works."""
+"""Public documentation example, fake keys typed in this session to prove the scan works, and byte patterns
+from binary files under .venv that an earlier scan printed into the session transcript."""
 
 logger = logging.getLogger("secret_scan")
 

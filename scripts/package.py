@@ -29,6 +29,7 @@ INCLUDED_FILES = (
 )
 EXCLUDED_PARTS = frozenset(
     {
+        ".git",
         ".venv",
         "__pycache__",
         ".pytest_cache",
