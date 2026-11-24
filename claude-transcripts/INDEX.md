@@ -5,7 +5,7 @@ Claude Code session files for this project directory, copied from
 
 | session ID | file | bytes |
 |---|---|---|
-| 208de43b-f1de-439e-8f9c-4711be235a1c | 208de43b-f1de-439e-8f9c-4711be235a1c.jsonl | 11346589 |
+| 208de43b-f1de-439e-8f9c-4711be235a1c | 208de43b-f1de-439e-8f9c-4711be235a1c.jsonl | 11698424 |
 | 208de43b-f1de-439e-8f9c-4711be235a1c | 208de43b-f1de-439e-8f9c-4711be235a1c/subagents/agent-a07411db6aa66ccbf.jsonl | 558788 |
 | 208de43b-f1de-439e-8f9c-4711be235a1c | 208de43b-f1de-439e-8f9c-4711be235a1c/subagents/agent-a07411db6aa66ccbf.meta.json | 283 |
 | 208de43b-f1de-439e-8f9c-4711be235a1c | 208de43b-f1de-439e-8f9c-4711be235a1c/subagents/agent-a1c1baba1f3eaee9c.jsonl | 370094 |
