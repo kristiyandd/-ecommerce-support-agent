@@ -1,0 +1,837 @@
+=== application/audit.py
+     1	"""Audit record shape, email masking and the one JSON serialisation used for payloads."""
+     2	
+     3	import json
+     4	import re
+     5	from collections.abc import Mapping
+     6	from dataclasses import dataclass
+     7	from enum import StrEnum
+     8	
+     9	from support_agent.domain.ids import TraceId
+    10	
+    11	EMAIL_PATTERN = re.compile(r"([A-Za-z0-9._%+-])[A-Za-z0-9._%+-]*@([A-Za-z0-9.-]+\.[A-Za-z]{2,})")
+    12	
+    13	
+    14	class AuditKind(StrEnum):
+    15	    REQUEST = "request"
+    16	    MODEL_CALL = "model_call"
+    17	    MODEL_ERROR = "model_error"
+    18	    TOOL_CALL = "tool_call"
+    19	    TOOL_RESULT = "tool_result"
+    20	    DECISION = "decision"
+    21	    ACTION = "action"
+    22	    ESCALATION = "escalation"
+    23	    OUTPUT_CHECK = "output_check"
+    24	    INTERNAL_ERROR = "internal_error"
+    25	    RESULT = "result"
+    26	
+    27	
+    28	@dataclass(frozen=True)
+    29	class AuditEntry:
+    30	    trace_id: TraceId
+    31	    kind: AuditKind
+    32	    payload: Mapping[str, str]
+    33	    prompt_version: str
+    34	    model_id: str
+    35	
+    36	
+    37	def mask_email(text: str) -> str:
+    38	    return EMAIL_PATTERN.sub(r"\1***@\2", text)
+    39	
+    40	
+    41	def serialise(value: object) -> str:
+    42	    """One JSON form for audit payloads and tool results sent to the model."""
+    43	    return json.dumps(value, sort_keys=True, ensure_ascii=False, default=str)
+=== application/auditor.py
+     1	"""The single writer of audit entries: every value as plain text, every entry with the same stamp."""
+     2	
+     3	from enum import Enum
+     4	
+     5	from support_agent.application.audit import AuditEntry, AuditKind
+     6	from support_agent.application.ports import AuditLog
+     7	from support_agent.domain.ids import TraceId
+     8	
+     9	
+    10	def _text(value: object) -> str:
+    11	    return value.value if isinstance(value, Enum) else str(value)
+    12	
+    13	
+    14	class Auditor:
+    15	    def __init__(self, log: AuditLog, prompt_version: str, model_id: str) -> None:
+    16	        self._log = log
+    17	        self._prompt_version = prompt_version
+    18	        self._model_id = model_id
+    19	
+    20	    def record(self, trace_id: TraceId, kind: AuditKind, /, **payload: object) -> None:
+    21	        values = {key: _text(value) for key, value in payload.items()}
+    22	        self._log.append(AuditEntry(trace_id, kind, values, self._prompt_version, self._model_id))
+=== application/claims.py
+     1	"""Money written in free text: customer claims (compared with records, never paid) and money in model text."""
+     2	
+     3	import re
+     4	from decimal import Decimal
+     5	
+     6	from support_agent.domain.money import Currency, Money
+     7	
+     8	ID_TOKEN_PATTERN = re.compile(r"\b[A-Z]{2,5}-[A-Z0-9-]*\d[A-Z0-9-]*\b")
+     9	"""Any ID-shaped token (orders, items, tracking numbers); removed first so its digits are never amounts."""
+    10	
+    11	OTHER_CURRENCY_SYMBOLS = "$\u00a3\u00a5"
+    12	OTHER_CURRENCY_CODES = r"(?:USD|GBP|JPY|CHF)\b"
+    13	NOT_AFTER_OTHER_CURRENCY = rf"(?<![\w.,\-{OTHER_CURRENCY_SYMBOLS}])(?<![{OTHER_CURRENCY_SYMBOLS}]\s)"
+    14	MONEY_PATTERN = re.compile(
+    15	    rf"{NOT_AFTER_OTHER_CURRENCY}(?:€\s?)?(\d{{1,9}}[.,]\d{{2}})(?![\w-]|[.,]\d)(?!\s?{OTHER_CURRENCY_CODES})(?:\s?EUR\b)?",
+    16	    re.IGNORECASE,
+    17	)
+    18	"""A two-decimal amount, optionally marked as euros, not marked as another currency."""
+    19	
+    20	MARKED_WHOLE_AMOUNT = re.compile(
+    21	    rf"€\s?(\d{{1,9}})(?![\d.,])|{NOT_AFTER_OTHER_CURRENCY}(\d{{1,9}})\s?(?:EUR|euros?)\b", re.IGNORECASE
+    22	)
+    23	"""A whole amount that names euros, such as "€60" or "150 euros"."""
+    24	
+    25	MONEY_MENTION = re.compile(r"[€$\u00a3\u00a5]\s?\d|\d\s?(?:€|eur\b|euros?\b|usd\b)|\d[.,]\d{2}\b", re.IGNORECASE)
+    26	"""Any way of writing an amount; model text may contain none, because code writes every money sentence."""
+    27	
+    28	
+    29	def strip_id_tokens(text: str) -> str:
+    30	    return ID_TOKEN_PATTERN.sub(" ", text)
+    31	
+    32	
+    33	def _decimal(number: str) -> Decimal:
+    34	    return Decimal(number.replace(",", "."))
+    35	
+    36	
+    37	def amounts_in(text: str) -> tuple[Decimal, ...]:
+    38	    cleaned = strip_id_tokens(text)
+    39	    decimals = [_decimal(match.group(1)) for match in MONEY_PATTERN.finditer(cleaned)]
+    40	    wholes = [Decimal(match.group(1) or match.group(2)) for match in MARKED_WHOLE_AMOUNT.finditer(cleaned)]
+    41	    return tuple(decimals + wholes)
+    42	
+    43	
+    44	def extract_claimed_amounts(message: str, currency: Currency) -> tuple[Money, ...]:
+    45	    return tuple(Money(amount, currency) for amount in amounts_in(message))
+    46	
+    47	
+    48	def mentions_money(text: str) -> bool:
+    49	    return bool(MONEY_MENTION.search(strip_id_tokens(text)))
+=== application/config.py
+     1	"""Orchestrator settings: loop bound, confirmation words and the patterns of the output check."""
+     2	
+     3	from dataclasses import dataclass
+     4	
+     5	from support_agent.application.audit import EMAIL_PATTERN
+     6	
+     7	DEFAULT_AFFIRMATIONS = frozenset({"yes", "y", "confirm", "yes please", "yes, please", "yes, please proceed"})
+     8	ORDER_ID_PATTERN = r"\bORD-\d+\b"
+     9	ORDER_ID_MENTION_PATTERN = r"(?<![\w\-])(ORD)[\s\-\u2010-\u2015]?(\d+)(?![\w\-])"
+    10	COMPLETED_REFUND_PATTERN = (
+    11	    r"\b(?:has|have|had|was|were|been|is|i|i've|we|we've)\s+(?:now\s+|already\s+|just\s+)?(?:been\s+)?"
+    12	    r"(?:refunded|processed|issued|sent back|credited|paid out|reimbursed)\b"
+    13	    r"|\bon its way\b|\byou(?:'ll| will) (?:receive|get)\b"
+    14	)
+    15	
+    16	
+    17	@dataclass(frozen=True)
+    18	class OrchestratorConfig:
+    19	    max_model_steps: int = 4
+    20	    affirmations: frozenset[str] = DEFAULT_AFFIRMATIONS
+    21	    order_id_pattern: str = ORDER_ID_PATTERN
+    22	    order_id_mention_pattern: str = ORDER_ID_MENTION_PATTERN
+    23	    email_pattern: str = EMAIL_PATTERN.pattern
+    24	    iso_date_pattern: str = r"\b\d{4}-\d{2}-\d{2}\b"
+    25	    completed_refund_pattern: str = COMPLETED_REFUND_PATTERN
+=== application/context.py
+     1	"""The customer-scoped data a turn may see, and the one way a refund check is assembled from it."""
+     2	
+     3	from dataclasses import dataclass
+     4	
+     5	from support_agent.application.ports import CustomerDataFactory, CustomerOrders, CustomerRefunds
+     6	from support_agent.domain.ids import CustomerId, ItemId, OrderId
+     7	from support_agent.domain.money import Currency, Money
+     8	from support_agent.policy.rules import RefundCheck
+     9	
+    10	
+    11	@dataclass(frozen=True)
+    12	class TurnContext:
+    13	    customer_id: CustomerId
+    14	    orders: CustomerOrders
+    15	    refunds: CustomerRefunds
+    16	    claimed_amounts: tuple[Money, ...]
+    17	
+    18	
+    19	def refund_check(context: TurnContext, order_id: OrderId, item_id: ItemId, quantity: int) -> RefundCheck:
+    20	    """Used at proposal time and again at execution time, so both see the same inputs."""
+    21	    return RefundCheck(
+    22	        order=context.orders.find_order(order_id),
+    23	        item_id=item_id,
+    24	        quantity=quantity,
+    25	        claimed_amounts=context.claimed_amounts,
+    26	        order_refunds=context.refunds.for_order(order_id),
+    27	        customer_refunds=context.refunds.all(),
+    28	    )
+    29	
+    30	
+    31	class ContextBuilder:
+    32	    """The only place a data scope is created, always from the authenticated customer_id."""
+    33	
+    34	    def __init__(self, data: CustomerDataFactory, currency: Currency) -> None:
+    35	        self._data = data
+    36	        self.currency = currency
+    37	
+    38	    def build(self, customer_id: CustomerId, claimed_amounts: tuple[Money, ...]) -> TurnContext:
+    39	        return TurnContext(
+    40	            customer_id=customer_id,
+    41	            orders=self._data.orders_for(customer_id),
+    42	            refunds=self._data.refunds_for(customer_id),
+    43	            claimed_amounts=claimed_amounts,
+    44	        )
+=== application/conversation_state.py
+     1	"""Solution-side conversation state: replayed history and single-use pending confirmations."""
+     2	
+     3	from dataclasses import dataclass, field
+     4	
+     5	from support_agent.application.model_protocol import Message
+     6	from support_agent.domain.ids import ConversationId, CustomerId
+     7	from support_agent.domain.turn import ProposedRefund
+     8	
+     9	type ConversationKey = tuple[ConversationId, CustomerId]
+    10	
+    11	
+    12	class ConversationStore:
+    13	    def __init__(self) -> None:
+    14	        self._history: dict[ConversationKey, list[Message]] = {}
+    15	
+    16	    def history(self, key: ConversationKey) -> tuple[Message, ...]:
+    17	        return tuple(self._history.get(key, ()))
+    18	
+    19	    def append(self, key: ConversationKey, *messages: Message) -> None:
+    20	        self._history.setdefault(key, []).extend(messages)
+    21	
+    22	
+    23	class PendingConfirmations:
+    24	    """At most one proposal per conversation and customer; take() removes it, so it is single use."""
+    25	
+    26	    def __init__(self) -> None:
+    27	        self._pending: dict[ConversationKey, ProposedRefund] = {}
+    28	
+    29	    def put(self, key: ConversationKey, proposal: ProposedRefund) -> None:
+    30	        self._pending[key] = proposal
+    31	
+    32	    def take(self, key: ConversationKey) -> ProposedRefund | None:
+    33	        return self._pending.pop(key, None)
+    34	
+    35	
+    36	@dataclass(frozen=True)
+    37	class ConversationState:
+    38	    conversations: ConversationStore = field(default_factory=ConversationStore)
+    39	    pending: PendingConfirmations = field(default_factory=PendingConfirmations)
+=== application/orchestrator.py
+     1	"""Bounded model/tool loop for one turn. Faults end the loop; nothing here moves money."""
+     2	
+     3	import logging
+     4	from dataclasses import dataclass, field
+     5	
+     6	from support_agent.application.audit import AuditKind, serialise
+     7	from support_agent.application.auditor import Auditor
+     8	from support_agent.application.config import OrchestratorConfig
+     9	from support_agent.application.context import TurnContext
+    10	from support_agent.application.model_protocol import (
+    11	    UNTRUSTED_DATA_KEY,
+    12	    Message,
+    13	    ModelRequest,
+    14	    ModelResponse,
+    15	    Role,
+    16	    ToolCall,
+    17	)
+    18	from support_agent.application.ports import ModelClient
+    19	from support_agent.application.prompts import SYSTEM_PROMPT
+    20	from support_agent.application.tool_schema import ToolFault
+    21	from support_agent.application.tools import ToolOutcome, ToolRegistry
+    22	from support_agent.domain.decisions import Decision, DecisionKind, ReasonCode
+    23	from support_agent.domain.ids import TraceId
+    24	from support_agent.domain.turn import EscalationItem, ProposedRefund
+    25	
+    26	logger = logging.getLogger(__name__)
+    27	
+    28	
+    29	@dataclass
+    30	class TurnState:
+    31	    """Mutable accumulator for one turn; turned into a frozen TurnResult by the service."""
+    32	
+    33	    trace_id: TraceId
+    34	    messages: list[Message]
+    35	    tool_names: list[str] = field(default_factory=list)
+    36	    decisions: list[Decision] = field(default_factory=list)
+    37	    escalations: list[EscalationItem] = field(default_factory=list)
+    38	    proposal: ProposedRefund | None = None
+    39	    reply: str | None = None
+    40	    ended_by: ReasonCode | None = None
+    41	    refund_on_record: bool = False
+    42	
+    43	    def end(self, reason: ReasonCode, kind: DecisionKind) -> None:
+    44	        self.ended_by = reason
+    45	        self.proposal = None
+    46	        self.decisions.append(Decision(kind, reason))
+    47	        if kind is DecisionKind.ESCALATE:
+    48	            self.escalations.append(EscalationItem(reason))
+    49	
+    50	    def reasons_to_explain(self) -> list[ReasonCode]:
+    51	        return [decision.reason for decision in self.decisions if decision.kind is DecisionKind.DENY]
+    52	
+    53	
+    54	class AgentLoop:
+    55	    def __init__(
+    56	        self, model: ModelClient, registry: ToolRegistry, auditor: Auditor, config: OrchestratorConfig
+    57	    ) -> None:
+    58	        self._model = model
+    59	        self._registry = registry
+    60	        self._auditor = auditor
+    61	        self._config = config
+    62	
+    63	    def run(self, state: TurnState, context: TurnContext) -> None:
+    64	        for _ in range(self._config.max_model_steps):
+    65	            response = self._complete(state)
+    66	            if response is None:
+    67	                return
+    68	            if not response.tool_calls:
+    69	                state.reply = response.text
+    70	                return
+    71	            state.messages.append(Message(Role.ASSISTANT, response.text or "", response.tool_calls))
+    72	            if not all(self._run_tool(call, state, context) for call in response.tool_calls):
+    73	                return
+    74	        state.end(ReasonCode.LOOP_EXHAUSTED, DecisionKind.ESCALATE)
+    75	
+    76	    def _complete(self, state: TurnState) -> ModelResponse | None:
+    77	        request = ModelRequest(SYSTEM_PROMPT, tuple(state.messages), self._registry.schemas())
+    78	        self._auditor.record(state.trace_id, AuditKind.MODEL_CALL, messages=len(request.messages))
+    79	        try:
+    80	            return self._model.complete(request)
+    81	        except Exception as error:  # provider boundary: any SDK or network error ends the turn safely
+    82	            logger.exception("model client failed")
+    83	            self._auditor.record(state.trace_id, AuditKind.MODEL_ERROR, error=type(error).__name__)
+    84	            state.end(ReasonCode.MODEL_UNAVAILABLE, DecisionKind.ESCALATE)
+    85	            return None
+    86	
+    87	    def _run_tool(self, call: ToolCall, state: TurnState, context: TurnContext) -> bool:
+    88	        self._auditor.record(state.trace_id, AuditKind.TOOL_CALL, name=call.name, arguments=call.arguments_json)
+    89	        state.tool_names.append(call.name)
+    90	        outcome = self._registry.run(call, context)
+    91	        if isinstance(outcome, ToolFault):
+    92	            self._auditor.record(state.trace_id, AuditKind.DECISION, reason=outcome.reason, detail=outcome.detail)
+    93	            state.end(outcome.reason, DecisionKind.DENY)
+    94	            return False
+    95	        if outcome.proposal is not None and state.proposal is not None:
+    96	            self._auditor.record(state.trace_id, AuditKind.DECISION, reason=ReasonCode.SECOND_PROPOSAL)
+    97	            state.end(ReasonCode.SECOND_PROPOSAL, DecisionKind.DENY)
+    98	            return False
+    99	        self._apply(call, outcome, state)
+   100	        return True
+   101	
+   102	    def _apply(self, call: ToolCall, outcome: ToolOutcome, state: TurnState) -> None:
+   103	        self._auditor.record(state.trace_id, AuditKind.TOOL_RESULT, name=call.name, result=serialise(outcome.result))
+   104	        if outcome.decision is not None:
+   105	            state.decisions.append(outcome.decision)
+   106	            self._auditor.record(
+   107	                state.trace_id, AuditKind.DECISION, kind=outcome.decision.kind, reason=outcome.decision.reason
+   108	            )
+   109	        state.escalations.extend(outcome.escalations)
+   110	        state.proposal = outcome.proposal or state.proposal
+   111	        state.refund_on_record = state.refund_on_record or outcome.shows_refund
+   112	        untrusted = serialise({UNTRUSTED_DATA_KEY: outcome.result})
+   113	        state.messages.append(Message(Role.TOOL, untrusted, tool_call_id=call.call_id))
+=== application/output_check.py
+     1	"""Narrow check on model-written text before it reaches the customer."""
+     2	
+     3	import re
+     4	import unicodedata
+     5	from dataclasses import dataclass
+     6	from typing import Final
+     7	
+     8	from support_agent.application.claims import mentions_money
+     9	from support_agent.application.config import OrchestratorConfig
+    10	from support_agent.domain.decisions import ReasonCode
+    11	
+    12	FORMAT_CATEGORY = "Cf"
+    13	NORMAL_FORM: Final = "NFKC"
+    14	
+    15	
+    16	@dataclass(frozen=True)
+    17	class AllowedFacts:
+    18	    order_ids: frozenset[str]
+    19	    refund_on_record: bool
+    20	
+    21	
+    22	def normalise(text: str) -> str:
+    23	    """NFKC plus removal of invisible format characters, so look-alike spellings cannot slip past."""
+    24	    folded = unicodedata.normalize(NORMAL_FORM, text)
+    25	    return "".join(char for char in folded if unicodedata.category(char) != FORMAT_CATEGORY)
+    26	
+    27	
+    28	class OutputCheck:
+    29	    """Blocks foreign order IDs, emails, dates, any money amount and invented refund outcomes."""
+    30	
+    31	    def __init__(self, config: OrchestratorConfig) -> None:
+    32	        self._order_id = re.compile(config.order_id_mention_pattern, re.IGNORECASE)
+    33	        self._email = re.compile(config.email_pattern)
+    34	        self._iso_date = re.compile(config.iso_date_pattern)
+    35	        self._completed_refund = re.compile(config.completed_refund_pattern, re.IGNORECASE)
+    36	
+    37	    def canonical_order_ids(self, text: str) -> frozenset[str]:
+    38	        return frozenset(f"{prefix.upper()}-{number}" for prefix, number in self._order_id.findall(normalise(text)))
+    39	
+    40	    def check(self, reply: str, allowed: AllowedFacts) -> ReasonCode | None:
+    41	        text = normalise(reply)
+    42	        violations = (
+    43	            bool(self.canonical_order_ids(text) - allowed.order_ids),
+    44	            bool(self._email.search(text)),
+    45	            bool(self._iso_date.search(text)),
+    46	            mentions_money(text),
+    47	            not allowed.refund_on_record and bool(self._completed_refund.search(text)),
+    48	        )
+    49	        return ReasonCode.OUTPUT_BLOCKED if any(violations) else None
+=== application/refund_executor.py
+     1	"""Executes a confirmed refund proposal after re-checking policy on fresh state."""
+     2	
+     3	import logging
+     4	import threading
+     5	from collections.abc import Callable
+     6	
+     7	from support_agent.application.context import TurnContext, refund_check
+     8	from support_agent.domain.decisions import Decision, DecisionKind, ReasonCode
+     9	from support_agent.domain.ids import REFUND_ID_PREFIX, CustomerId, RefundId, TraceId
+    10	from support_agent.domain.refunds import RefundRecord, RefundState
+    11	from support_agent.domain.turn import ActionOutcome, ProposedRefund
+    12	from support_agent.policy.engine import PolicyEngine
+    13	
+    14	logger = logging.getLogger(__name__)
+    15	
+    16	
+    17	def _outcome(record: RefundRecord, *, replayed: bool) -> ActionOutcome:
+    18	    return ActionOutcome(
+    19	        refund_id=record.refund_id,
+    20	        order_id=record.order_id,
+    21	        item_id=record.item_id,
+    22	        quantity=record.quantity,
+    23	        amount=record.amount,
+    24	        state=record.state,
+    25	        replayed=replayed,
+    26	    )
+    27	
+    28	
+    29	class RefundExecutor:
+    30	    def __init__(self, engine: PolicyEngine, new_id: Callable[[], str]) -> None:
+    31	        self._engine = engine
+    32	        self._new_id = new_id
+    33	        self._lock = threading.Lock()
+    34	
+    35	    def execute(self, proposal: ProposedRefund, context: TurnContext, trace_id: TraceId) -> ActionOutcome | Decision:
+    36	        with self._lock:
+    37	            existing = context.refunds.find_by_key(proposal.idempotency_key)
+    38	            if existing is not None:
+    39	                return _outcome(existing, replayed=True)
+    40	            if not self._still_valid(proposal, context):
+    41	                return Decision(DecisionKind.DENY, ReasonCode.CONFIRMATION_STALE)
+    42	            record = self._issue(proposal, context.customer_id, trace_id)
+    43	            context.refunds.add(record)
+    44	        logger.info("refund issued refund_id=%s trace_id=%s", record.refund_id, trace_id)
+    45	        return _outcome(record, replayed=False)
+    46	
+    47	    def _still_valid(self, proposal: ProposedRefund, context: TurnContext) -> bool:
+    48	        check = refund_check(context, proposal.order_id, proposal.item_id, proposal.quantity)
+    49	        decision = self._engine.assess_refund(check).decision
+    50	        return decision.kind is DecisionKind.NEEDS_CONFIRMATION and decision.amount == proposal.amount
+    51	
+    52	    def _issue(self, proposal: ProposedRefund, customer_id: CustomerId, trace_id: TraceId) -> RefundRecord:
+    53	        return RefundRecord(
+    54	            refund_id=RefundId(f"{REFUND_ID_PREFIX}{self._new_id()}"),
+    55	            idempotency_key=proposal.idempotency_key,
+    56	            customer_id=customer_id,
+    57	            order_id=proposal.order_id,
+    58	            item_id=proposal.item_id,
+    59	            quantity=proposal.quantity,
+    60	            amount=proposal.amount,
+    61	            reason=proposal.reason,
+    62	            state=RefundState.ISSUED,
+    63	            trace_id=trace_id,
+    64	        )
+=== application/replies.py
+     1	"""All customer-facing sentences written by code: outcomes, money, reason explanations and summaries."""
+     2	
+     3	from collections.abc import Mapping
+     4	from types import MappingProxyType
+     5	
+     6	from support_agent.domain.decisions import ReasonCode
+     7	from support_agent.domain.ids import TraceId
+     8	from support_agent.domain.money import Money
+     9	from support_agent.domain.turn import ActionOutcome, EscalationItem, ProposedRefund
+    10	
+    11	TIMES = chr(0xD7)
+    12	NONE_LABEL = "none"
+    13	
+    14	CLARIFY = "Sorry, I couldn't work that out. Could you tell me the order number and what you need help with?"
+    15	SAFE_FALLBACK = (
+    16	    "Sorry, I can't answer that reliably right now. Could you rephrase your question, including the order number?"
+    17	)
+    18	
+    19	REPLY_BY_REASON: Mapping[ReasonCode, str] = MappingProxyType(
+    20	    {
+    21	        ReasonCode.ORDER_NOT_FOUND: "I can't find that order on your account.",
+    22	        ReasonCode.ORDER_NOT_ELIGIBLE: "That order isn't eligible for a refund at the moment.",
+    23	        ReasonCode.ITEM_NOT_ON_ORDER: "That item isn't on this order.",
+    24	        ReasonCode.ALREADY_REFUNDED: "That item has already been refunded.",
+    25	        ReasonCode.QUANTITY_EXCEEDS_REFUNDABLE: "That's more units than can still be refunded.",
+    26	        ReasonCode.EXCEEDS_AMOUNT_PAID: "That refund would be more than was paid for the order.",
+    27	        ReasonCode.CONFIRMATION_STALE: (
+    28	            "I couldn't complete that refund because the order details changed since it was proposed; "
+    29	            "no money has moved. Please ask again and I'll check the current details."
+    30	        ),
+    31	        ReasonCode.OUTPUT_BLOCKED: SAFE_FALLBACK,
+    32	        ReasonCode.INTERNAL_ERROR: "Something went wrong on our side; no money has moved.",
+    33	    }
+    34	)
+    35	
+    36	
+    37	def reason_line(reason: ReasonCode) -> str:
+    38	    return REPLY_BY_REASON.get(reason, "")
+    39	
+    40	
+    41	def confirmation_line(proposal: ProposedRefund) -> str:
+    42	    return (
+    43	        f"To confirm a refund of {proposal.amount.format()} for {proposal.quantity} {TIMES} {proposal.item_name} "
+    44	        f"on order {proposal.order_id}, reply 'yes'."
+    45	    )
+    46	
+    47	
+    48	def dispute_line(claimed: Money, record_amount: Money) -> str:
+    49	    return (
+    50	        f"The amount you mentioned ({claimed.format()}) is higher than the {record_amount.format()} "
+    51	        "our records show for this item; a colleague will review the difference."
+    52	    )
+    53	
+    54	
+    55	def escalation_line(trace_id: TraceId) -> str:
+    56	    return f"I've passed this to a colleague, who will follow up with you (reference {trace_id})."
+    57	
+    58	
+    59	def executed_line(outcome: ActionOutcome, item_name: str) -> str:
+    60	    if outcome.replayed:
+    61	        return (
+    62	            f"That refund was already issued earlier: {outcome.amount.format()} for {outcome.quantity} {TIMES} "
+    63	            f"{item_name} on order {outcome.order_id} (refund reference {outcome.refund_id}). Nothing new was charged."
+    64	        )
+    65	    return (
+    66	        f"Done: a refund of {outcome.amount.format()} for {outcome.quantity} {TIMES} {item_name} on order "
+    67	        f"{outcome.order_id} has been issued (refund reference {outcome.refund_id})."
+    68	    )
+    69	
+    70	
+    71	def escalation_summary(items: tuple[EscalationItem, ...]) -> str:
+    72	    """Code-built summary for the human queue: reason codes, IDs and record amounts only, never free text."""
+    73	    parts = (
+    74	        f"{item.reason.value}(order={item.order_id or NONE_LABEL}, item={item.item_id or NONE_LABEL}, "
+    75	        f"amount={item.amount.format() if item.amount else NONE_LABEL})"
+    76	        for item in items
+    77	    )
+    78	    return "; ".join(parts)
+=== application/service.py
+     1	"""SupportService: one SupportRequest in, exactly one TurnResult out (Facade over the turn pipeline)."""
+     2	
+     3	import logging
+     4	from collections.abc import Callable
+     5	from dataclasses import dataclass
+     6	
+     7	from support_agent.application import replies
+     8	from support_agent.application.audit import AuditKind
+     9	from support_agent.application.auditor import Auditor
+    10	from support_agent.application.claims import extract_claimed_amounts
+    11	from support_agent.application.config import OrchestratorConfig
+    12	from support_agent.application.context import ContextBuilder, TurnContext
+    13	from support_agent.application.conversation_state import ConversationKey, ConversationState
+    14	from support_agent.application.model_protocol import Message, Role
+    15	from support_agent.application.orchestrator import AgentLoop, TurnState
+    16	from support_agent.application.output_check import AllowedFacts, OutputCheck
+    17	from support_agent.application.refund_executor import RefundExecutor
+    18	from support_agent.domain.decisions import Decision, DecisionKind, ReasonCode
+    19	from support_agent.domain.ids import TRACE_ID_PREFIX, TraceId
+    20	from support_agent.domain.turn import (
+    21	    ActionOutcome,
+    22	    Escalation,
+    23	    EscalationItem,
+    24	    ProposedRefund,
+    25	    SupportRequest,
+    26	    TurnResult,
+    27	)
+    28	
+    29	logger = logging.getLogger(__name__)
+    30	
+    31	NO_ACTION = Decision(DecisionKind.ALLOW, ReasonCode.NO_ACTION)
+    32	
+    33	
+    34	@dataclass(frozen=True)
+    35	class TurnPipeline:
+    36	    """The collaborators of a turn: data scope, model loop, refund execution and the output check."""
+    37	
+    38	    context: ContextBuilder
+    39	    loop: AgentLoop
+    40	    executor: RefundExecutor
+    41	    output_check: OutputCheck
+    42	
+    43	
+    44	class SupportService:
+    45	    def __init__(
+    46	        self,
+    47	        pipeline: TurnPipeline,
+    48	        state: ConversationState,
+    49	        auditor: Auditor,
+    50	        config: OrchestratorConfig,
+    51	        new_id: Callable[[], str],
+    52	    ) -> None:
+    53	        self._pipeline = pipeline
+    54	        self._state = state
+    55	        self._auditor = auditor
+    56	        self._config = config
+    57	        self._new_id = new_id
+    58	
+    59	    def handle(self, request: SupportRequest) -> TurnResult:
+    60	        trace_id = TraceId(f"{TRACE_ID_PREFIX}{self._new_id()}")
+    61	        self._auditor.record(trace_id, AuditKind.REQUEST, customer_id=request.customer_id, message=request.message)
+    62	        try:
+    63	            result = self._dispatch(request, trace_id)
+    64	        except Exception as error:
+    65	            logger.exception("turn failed trace_id=%s", trace_id)
+    66	            self._auditor.record(trace_id, AuditKind.INTERNAL_ERROR, error=type(error).__name__)
+    67	            result = self._failed(request, trace_id)
+    68	        key: ConversationKey = (request.conversation_id, request.customer_id)
+    69	        self._state.conversations.append(
+    70	            key, Message(Role.USER, request.message), Message(Role.ASSISTANT, result.reply)
+    71	        )
+    72	        labels = ", ".join(decision.label() for decision in result.decisions)
+    73	        self._auditor.record(trace_id, AuditKind.RESULT, reply=result.reply, decisions=labels)
+    74	        return result
+    75	
+    76	    def _dispatch(self, request: SupportRequest, trace_id: TraceId) -> TurnResult:
+    77	        key: ConversationKey = (request.conversation_id, request.customer_id)
+    78	        pending = self._state.pending.take(key)
+    79	        if pending is not None and self._is_affirmation(request.message):
+    80	            return self._confirm(request, pending, trace_id)
+    81	        return self._converse(request, key, trace_id)
+    82	
+    83	    def _is_affirmation(self, message: str) -> bool:
+    84	        return message.strip().lower().rstrip(".!") in self._config.affirmations
+    85	
+    86	    def _failed(self, request: SupportRequest, trace_id: TraceId) -> TurnResult:
+    87	        item = EscalationItem(ReasonCode.INTERNAL_ERROR)
+    88	        escalation = Escalation((item.reason,), request.customer_id, replies.escalation_summary((item,)), trace_id)
+    89	        reply = f"{replies.reason_line(ReasonCode.INTERNAL_ERROR)} {replies.escalation_line(trace_id)}"
+    90	        decision = Decision(DecisionKind.ESCALATE, ReasonCode.INTERNAL_ERROR)
+    91	        return TurnResult(reply, trace_id, (), (decision,), None, (), escalation)
+    92	
+    93	    def _confirm(self, request: SupportRequest, proposal: ProposedRefund, trace_id: TraceId) -> TurnResult:
+    94	        context = self._pipeline.context.build(request.customer_id, ())
+    95	        outcome = self._pipeline.executor.execute(proposal, context, trace_id)
+    96	        if isinstance(outcome, ActionOutcome):
+    97	            decision = Decision(DecisionKind.ALLOW, ReasonCode.CONFIRMED, outcome.amount)
+    98	            reply = replies.executed_line(outcome, proposal.item_name)
+    99	            result = TurnResult(reply, trace_id, (), (decision,), None, (outcome,), None)
+   100	            self._auditor.record(trace_id, AuditKind.ACTION, refund_id=outcome.refund_id, replayed=outcome.replayed)
+   101	            return result
+   102	        self._auditor.record(trace_id, AuditKind.DECISION, kind=outcome.kind, reason=outcome.reason)
+   103	        return TurnResult(replies.reason_line(outcome.reason), trace_id, (), (outcome,), None, (), None)
+   104	
+   105	    def _converse(self, request: SupportRequest, key: ConversationKey, trace_id: TraceId) -> TurnResult:
+   106	        claims = extract_claimed_amounts(request.message, self._pipeline.context.currency)
+   107	        context = self._pipeline.context.build(request.customer_id, claims)
+   108	        state = TurnState(trace_id, [*self._state.conversations.history(key), Message(Role.USER, request.message)])
+   109	        self._pipeline.loop.run(state, context)
+   110	        model_text = self._checked_model_text(state, request, context)
+   111	        reply = self._compose(model_text, state, context)
+   112	        escalation = self._escalation(state, request)
+   113	        if state.proposal is not None:
+   114	            self._state.pending.put(key, state.proposal)
+   115	        decisions = tuple(state.decisions) or (NO_ACTION,)
+   116	        return TurnResult(reply, trace_id, tuple(state.tool_names), decisions, state.proposal, (), escalation)
+   117	
+   118	    def _checked_model_text(self, state: TurnState, request: SupportRequest, context: TurnContext) -> str:
+   119	        if state.ended_by is not None:
+   120	            return "" if state.escalations else replies.CLARIFY
+   121	        text = (state.reply or "").strip()
+   122	        has_code_lines = state.proposal is not None or bool(state.escalations) or bool(state.reasons_to_explain())
+   123	        if not text:
+   124	            return "" if has_code_lines else self._block(state, text)
+   125	        check = self._pipeline.output_check
+   126	        own_ids = frozenset(order.order_id for order in context.orders.list_orders())
+   127	        allowed = AllowedFacts(own_ids | check.canonical_order_ids(request.message), state.refund_on_record)
+   128	        return text if check.check(text, allowed) is None else self._block(state, text)
+   129	
+   130	    def _block(self, state: TurnState, text: str) -> str:
+   131	        self._auditor.record(state.trace_id, AuditKind.OUTPUT_CHECK, reason=ReasonCode.OUTPUT_BLOCKED, reply=text)
+   132	        state.decisions.append(Decision(DecisionKind.DENY, ReasonCode.OUTPUT_BLOCKED))
+   133	        state.proposal = None
+   134	        return replies.SAFE_FALLBACK
+   135	
+   136	    def _compose(self, model_text: str, state: TurnState, context: TurnContext) -> str:
+   137	        lines = [model_text]
+   138	        if model_text != replies.SAFE_FALLBACK:
+   139	            lines.extend(replies.reason_line(reason) for reason in state.reasons_to_explain())
+   140	        if state.proposal is not None:
+   141	            lines.append(replies.confirmation_line(state.proposal))
+   142	        lines.extend(self._dispute_lines(state, context))
+   143	        if state.escalations:
+   144	            lines.append(replies.escalation_line(state.trace_id))
+   145	        return " ".join(dict.fromkeys(line for line in lines if line))
+   146	
+   147	    def _dispute_lines(self, state: TurnState, context: TurnContext) -> list[str]:
+   148	        if not context.claimed_amounts:
+   149	            return []
+   150	        claimed = max(context.claimed_amounts, key=lambda money: money.amount)
+   151	        disputes = (item for item in state.escalations if item.reason is ReasonCode.AMOUNT_DISPUTE)
+   152	        return [replies.dispute_line(claimed, item.amount) for item in disputes if item.amount is not None]
+   153	
+   154	    def _escalation(self, state: TurnState, request: SupportRequest) -> Escalation | None:
+   155	        if not state.escalations:
+   156	            return None
+   157	        items = tuple(dict.fromkeys(state.escalations))
+   158	        summary = replies.escalation_summary(items)
+   159	        self._auditor.record(state.trace_id, AuditKind.ESCALATION, summary=summary)
+   160	        reasons = tuple(dict.fromkeys(item.reason for item in items))
+   161	        return Escalation(reasons, request.customer_id, summary, state.trace_id)
+=== application/tool_schema.py
+     1	"""Trust boundary for model tool calls: pydantic argument models, strict validation and JSON Schema."""
+     2	
+     3	from dataclasses import dataclass
+     4	
+     5	from pydantic import BaseModel, ConfigDict, ValidationError
+     6	
+     7	from support_agent.domain.decisions import ReasonCode
+     8	
+     9	
+    10	class ToolArguments(BaseModel):
+    11	    """Base for tool argument models: unknown fields, coercion and mutation are all rejected."""
+    12	
+    13	    model_config = ConfigDict(extra="forbid", strict=True, frozen=True)
+    14	
+    15	
+    16	@dataclass(frozen=True)
+    17	class ToolFault:
+    18	    reason: ReasonCode
+    19	    detail: str
+    20	
+    21	
+    22	def schema_for(arguments_type: type[ToolArguments]) -> dict[str, object]:
+    23	    return arguments_type.model_json_schema()
+    24	
+    25	
+    26	def _summary(error: ValidationError) -> str:
+    27	    return "; ".join(f"{'.'.join(map(str, item['loc'])) or 'arguments'}: {item['msg']}" for item in error.errors())
+    28	
+    29	
+    30	def parse_arguments[T: ToolArguments](arguments_type: type[T], arguments_json: str) -> T | ToolFault:
+    31	    try:
+    32	        return arguments_type.model_validate_json(arguments_json)
+    33	    except ValidationError as error:
+    34	        return ToolFault(ReasonCode.INVALID_ARGUMENTS, _summary(error))
+=== application/model_protocol.py
+     1	"""Model message and tool-call protocol, shaped like the Claude and OpenAI tool-use APIs."""
+     2	
+     3	from collections.abc import Mapping
+     4	from dataclasses import dataclass
+     5	from enum import StrEnum
+     6	
+     7	UNTRUSTED_DATA_KEY = "untrusted_data"
+     8	
+     9	
+    10	class Role(StrEnum):
+    11	    USER = "user"
+    12	    ASSISTANT = "assistant"
+    13	    TOOL = "tool"
+    14	
+    15	
+    16	@dataclass(frozen=True)
+    17	class ToolCall:
+    18	    call_id: str
+    19	    name: str
+    20	    arguments_json: str
+    21	
+    22	
+    23	@dataclass(frozen=True)
+    24	class Message:
+    25	    role: Role
+    26	    content: str
+    27	    tool_calls: tuple[ToolCall, ...] = ()
+    28	    tool_call_id: str | None = None
+    29	
+    30	
+    31	@dataclass(frozen=True)
+    32	class ToolSchema:
+    33	    name: str
+    34	    description: str
+    35	    parameters: Mapping[str, object]
+    36	
+    37	
+    38	@dataclass(frozen=True)
+    39	class ModelRequest:
+    40	    system_prompt: str
+    41	    messages: tuple[Message, ...]
+    42	    tools: tuple[ToolSchema, ...]
+    43	
+    44	
+    45	@dataclass(frozen=True)
+    46	class ModelResponse:
+    47	    text: str | None
+    48	    tool_calls: tuple[ToolCall, ...] = ()
+=== application/ports.py
+     1	"""Ports the application depends on; adapters implement them."""
+     2	
+     3	from typing import Protocol
+     4	
+     5	from support_agent.application.audit import AuditEntry
+     6	from support_agent.application.model_protocol import ModelRequest, ModelResponse
+     7	from support_agent.domain.ids import CustomerId, IdempotencyKey, OrderId, TraceId
+     8	from support_agent.domain.orders import Order
+     9	from support_agent.domain.refunds import RefundRecord
+    10	
+    11	
+    12	class CustomerOrders(Protocol):
+    13	    """Orders of exactly one customer; foreign and missing orders both come back as None."""
+    14	
+    15	    def list_orders(self) -> tuple[Order, ...]: ...
+    16	
+    17	    def find_order(self, order_id: OrderId) -> Order | None: ...
+    18	
+    19	
+    20	class CustomerRefunds(Protocol):
+    21	    """Refund records of exactly one customer."""
+    22	
+    23	    def for_order(self, order_id: OrderId) -> tuple[RefundRecord, ...]: ...
+    24	
+    25	    def all(self) -> tuple[RefundRecord, ...]: ...
+    26	
+    27	    def find_by_key(self, key: IdempotencyKey) -> RefundRecord | None: ...
+    28	
+    29	    def add(self, record: RefundRecord) -> None: ...
+    30	
+    31	
+    32	class CustomerDataFactory(Protocol):
+    33	    """Builds repositories scoped to the authenticated customer, never to an ID chosen by the model."""
+    34	
+    35	    def orders_for(self, customer_id: CustomerId) -> CustomerOrders: ...
+    36	
+    37	    def refunds_for(self, customer_id: CustomerId) -> CustomerRefunds: ...
+    38	
+    39	
+    40	class ModelClient(Protocol):
+    41	    """One model completion: messages and tool schemas in, text and/or tool calls out."""
+    42	
+    43	    @property
+    44	    def model_id(self) -> str: ...
+    45	
+    46	    def complete(self, request: ModelRequest) -> ModelResponse: ...
+    47	
+    48	
+    49	class AuditLog(Protocol):
+    50	    """Append-only audit trail keyed by trace_id."""
+    51	
+    52	    def append(self, entry: AuditEntry) -> None: ...
+    53	
+    54	    def entries(self, trace_id: TraceId) -> tuple[AuditEntry, ...]: ...

@@ -1,0 +1,252 @@
+.venv\Lib\site-packages\_pytest\_io\terminalwriter.py:217:        from _pytest.config.exceptions import UsageError
+.venv\Lib\site-packages\_pytest\assertion\__init__.py:19:from _pytest.config import Config
+.venv\Lib\site-packages\_pytest\assertion\__init__.py:20:from _pytest.config import hookimpl
+.venv\Lib\site-packages\_pytest\assertion\__init__.py:21:from _pytest.config.argparsing import Parser
+.venv\Lib\site-packages\_pytest\assertion\__init__.py:154:    assertstate = session.config.stash.get(assertstate_key, None)
+.venv\Lib\site-packages\_pytest\assertion\__init__.py:186:            config=item.config, op=op, left=left, right=right
+.venv\Lib\site-packages\_pytest\assertion\__init__.py:190:                new_expl = truncate.materialize_with_truncation(new_expl, item.config)
+.venv\Lib\site-packages\_pytest\assertion\__init__.py:195:                    if item.config.getvalue("assertmode") == "rewrite":
+.venv\Lib\site-packages\_pytest\assertion\__init__.py:202:    util._config = item.config
+.venv\Lib\site-packages\_pytest\assertion\__init__.py:219:    assertstate = session.config.stash.get(assertstate_key, None)
+.venv\Lib\site-packages\_pytest\assertion\rewrite.py:43:from _pytest.config import Config
+.venv\Lib\site-packages\_pytest\assertion\rewrite.py:77:        self.config = config
+.venv\Lib\site-packages\_pytest\assertion\rewrite.py:107:        state = self.config.stash[assertstate_key]
+.venv\Lib\site-packages\_pytest\assertion\rewrite.py:149:        state = self.config.stash[assertstate_key]
+.venv\Lib\site-packages\_pytest\assertion\rewrite.py:176:            source_hash, co = _rewrite_test(fn, self.config)
+.venv\Lib\site-packages\_pytest\assertion\rewrite.py:281:        self.config.issue_config_time_warning(
+.venv\Lib\site-packages\_pytest\assertion\rewrite.py:692:        self.config = config
+.venv\Lib\site-packages\_pytest\assertion\truncate.py:14:from _pytest.config import Config
+.venv\Lib\site-packages\_pytest\assertion\util.py:24:from _pytest.config import Config
+.venv\Lib\site-packages\_pytest\cacheprovider.py:24:from _pytest.config import Config
+.venv\Lib\site-packages\_pytest\cacheprovider.py:25:from _pytest.config import ExitCode
+.venv\Lib\site-packages\_pytest\cacheprovider.py:26:from _pytest.config import hookimpl
+.venv\Lib\site-packages\_pytest\cacheprovider.py:27:from _pytest.config.argparsing import Parser
+.venv\Lib\site-packages\_pytest\cacheprovider.py:289:                    self.lfplugin.config.pluginmanager.register(
+.venv\Lib\site-packages\_pytest\cacheprovider.py:328:        self.config = config
+.venv\Lib\site-packages\_pytest\cacheprovider.py:349:        rootpath = self.config.rootpath
+.venv\Lib\site-packages\_pytest\cacheprovider.py:358:        if self.active and self.config.get_verbosity() >= 0:
+.venv\Lib\site-packages\_pytest\cacheprovider.py:404:                if self.config.getoption("lf"):
+.venv\Lib\site-packages\_pytest\cacheprovider.py:411:                suffix = " first" if self.config.getoption("failedfirst") else ""
+.venv\Lib\site-packages\_pytest\cacheprovider.py:421:            if self.config.getoption("last_failed_no_failures") == "none":
+.venv\Lib\site-packages\_pytest\cacheprovider.py:431:        config = self.config
+.venv\Lib\site-packages\_pytest\cacheprovider.py:446:        self.config = config
+.venv\Lib\site-packages\_pytest\cacheprovider.py:479:        config = self.config
+.venv\Lib\site-packages\_pytest\cacheprovider.py:589:    assert request.config.cache is not None
+.venv\Lib\site-packages\_pytest\cacheprovider.py:590:    return request.config.cache
+.venv\Lib\site-packages\_pytest\cacheprovider.py:635:        """Glob for files under `base`, discarding matches that escape it.
+.venv\Lib\site-packages\_pytest\capture.py:34:from _pytest.config import Config
+.venv\Lib\site-packages\_pytest\capture.py:35:from _pytest.config import hookimpl
+.venv\Lib\site-packages\_pytest\capture.py:36:from _pytest.config.argparsing import Parser
+.venv\Lib\site-packages\_pytest\capture.py:1002:        capmanager: CaptureManager = self.request.config.pluginmanager.getplugin(
+.venv\Lib\site-packages\_pytest\capture.py:1031:    capman: CaptureManager = request.config.pluginmanager.getplugin("capturemanager")
+.venv\Lib\site-packages\_pytest\capture.py:1064:    capman: CaptureManager = request.config.pluginmanager.getplugin("capturemanager")
+.venv\Lib\site-packages\_pytest\capture.py:1094:    capman: CaptureManager = request.config.pluginmanager.getplugin("capturemanager")
+.venv\Lib\site-packages\_pytest\capture.py:1122:    capman: CaptureManager = request.config.pluginmanager.getplugin("capturemanager")
+.venv\Lib\site-packages\_pytest\capture.py:1151:    capman: CaptureManager = request.config.pluginmanager.getplugin("capturemanager")
+.venv\Lib\site-packages\_pytest\config\__init__.py:67:from _pytest.config.argparsing import _ini_type_repr
+.venv\Lib\site-packages\_pytest\config\__init__.py:68:from _pytest.config.argparsing import _IniLiteral
+.venv\Lib\site-packages\_pytest\config\__init__.py:69:from _pytest.config.argparsing import Argument
+.venv\Lib\site-packages\_pytest\config\__init__.py:70:from _pytest.config.argparsing import FILE_OR_DIR
+.venv\Lib\site-packages\_pytest\config\__init__.py:71:from _pytest.config.argparsing import Parser
+.venv\Lib\site-packages\_pytest\debugging.py:19:from _pytest.config import Config
+.venv\Lib\site-packages\_pytest\debugging.py:20:from _pytest.config import ConftestImportFailure
+.venv\Lib\site-packages\_pytest\debugging.py:21:from _pytest.config import hookimpl
+.venv\Lib\site-packages\_pytest\debugging.py:22:from _pytest.config import PytestPluginManager
+.venv\Lib\site-packages\_pytest\debugging.py:23:from _pytest.config.argparsing import Parser
+.venv\Lib\site-packages\_pytest\debugging.py:24:from _pytest.config.exceptions import UsageError
+.venv\Lib\site-packages\_pytest\debugging.py:149:        import _pytest.config
+.venv\Lib\site-packages\_pytest\debugging.py:168:                    tw = _pytest.config.create_terminal_writer(cls._config)
+.venv\Lib\site-packages\_pytest\debugging.py:242:        import _pytest.config
+.venv\Lib\site-packages\_pytest\debugging.py:252:            tw = _pytest.config.create_terminal_writer(cls._config)
+.venv\Lib\site-packages\_pytest\debugging.py:290:        capman = node.config.pluginmanager.getplugin("capturemanager")
+.venv\Lib\site-packages\_pytest\debugging.py:333:    if pyfuncitem.config.getvalue("trace"):
+.venv\Lib\site-packages\_pytest\debugging.py:343:    tw = node.config.pluginmanager.getplugin("terminalreporter")._tw
+.venv\Lib\site-packages\_pytest\debugging.py:346:    showcapture = node.config.option.showcapture
+.venv\Lib\site-packages\_pytest\doctest.py:32:from _pytest.config import Config
+.venv\Lib\site-packages\_pytest\doctest.py:33:from _pytest.config.argparsing import Parser
+.venv\Lib\site-packages\_pytest\doctest.py:131:    config = parent.config
+.venv\Lib\site-packages\_pytest\doctest.py:315:        capman = self.config.pluginmanager.getplugin("capturemanager")
+.venv\Lib\site-packages\_pytest\doctest.py:355:            report_choice = _get_report_choice(self.config.getoption("doctestreport"))
+.venv\Lib\site-packages\_pytest\doctest.py:434:        encoding = self.config.getini("doctest_encoding")
+.venv\Lib\site-packages\_pytest\doctest.py:440:        optionflags = get_optionflags(self.config)
+.venv\Lib\site-packages\_pytest\doctest.py:446:            continue_on_failure=_get_continue_on_failure(self.config),
+.venv\Lib\site-packages\_pytest\doctest.py:567:            if self.config.getvalue("doctest_ignore_import_errors"):
+.venv\Lib\site-packages\_pytest\doctest.py:577:        optionflags = get_optionflags(self.config)
+.venv\Lib\site-packages\_pytest\doctest.py:582:            continue_on_failure=_get_continue_on_failure(self.config),
+.venv\Lib\site-packages\_pytest\faulthandler.py:7:from _pytest.config import Config
+.venv\Lib\site-packages\_pytest\faulthandler.py:8:from _pytest.config.argparsing import Parser
+.venv\Lib\site-packages\_pytest\faulthandler.py:90:    timeout = get_timeout_config_value(item.config)
+.venv\Lib\site-packages\_pytest\faulthandler.py:91:    exit_on_timeout = get_exit_on_timeout_config_value(item.config)
+.venv\Lib\site-packages\_pytest\faulthandler.py:95:        stderr = item.config.stash[fault_handler_stderr_fd_key]
+.venv\Lib\site-packages\_pytest\fixtures.py:53:from _pytest.config import _PluggyPlugin
+.venv\Lib\site-packages\_pytest\fixtures.py:54:from _pytest.config import Config
+.venv\Lib\site-packages\_pytest\fixtures.py:55:from _pytest.config import ExitCode
+.venv\Lib\site-packages\_pytest\fixtures.py:56:from _pytest.config import hookimpl
+.venv\Lib\site-packages\_pytest\fixtures.py:57:from _pytest.config.argparsing import Parser
+.venv\Lib\site-packages\_pytest\fixtures.py:585:        return self._pyfuncitem.config
+.venv\Lib\site-packages\_pytest\fixtures.py:821:                source_path_str = str(source_path.relative_to(funcitem.config.rootpath))
+.venv\Lib\site-packages\_pytest\fixtures.py:824:            location = getlocation(fixturedef.func, funcitem.config.rootpath)
+.venv\Lib\site-packages\_pytest\fixtures.py:1325:            config=request.config,
+.venv\Lib\site-packages\_pytest\fixtures.py:1656:    return request.config
+.venv\Lib\site-packages\_pytest\fixtures.py:1797:        self.config: Config = session.config
+.venv\Lib\site-packages\_pytest\fixtures.py:1816:            session: list(self.config.getini("usefixtures")),
+.venv\Lib\site-packages\_pytest\fixtures.py:1825:        session.config.pluginmanager.register(self, "funcmanage")
+.venv\Lib\site-packages\_pytest\fixtures.py:1901:                    if collector.path == self.config.rootpath
+.venv\Lib\site-packages\_pytest\fixtures.py:1923:        rootpath = session.config.rootpath
+.venv\Lib\site-packages\_pytest\fixtures.py:2105:            config=self.config,
+.venv\Lib\site-packages\_pytest\fixtures.py:2461:    import _pytest.config
+.venv\Lib\site-packages\_pytest\fixtures.py:2465:    tw = _pytest.config.create_terminal_writer(config)
+.venv\Lib\site-packages\_pytest\fixtures.py:2516:    import _pytest.config
+.venv\Lib\site-packages\_pytest\fixtures.py:2520:    tw = _pytest.config.create_terminal_writer(config)
+.venv\Lib\site-packages\_pytest\helpconfig.py:13:from _pytest.config import Config
+.venv\Lib\site-packages\_pytest\helpconfig.py:14:from _pytest.config import ExitCode
+.venv\Lib\site-packages\_pytest\helpconfig.py:15:from _pytest.config import PrintHelp
+.venv\Lib\site-packages\_pytest\helpconfig.py:16:from _pytest.config.argparsing import _ini_type_repr
+.venv\Lib\site-packages\_pytest\helpconfig.py:17:from _pytest.config.argparsing import _split_help_text
+.venv\Lib\site-packages\_pytest\helpconfig.py:18:from _pytest.config.argparsing import Parser
+.venv\Lib\site-packages\_pytest\hookspec.py:24:    from _pytest.config import _PluggyPlugin
+.venv\Lib\site-packages\_pytest\hookspec.py:25:    from _pytest.config import Config
+.venv\Lib\site-packages\_pytest\hookspec.py:26:    from _pytest.config import ExitCode
+.venv\Lib\site-packages\_pytest\hookspec.py:27:    from _pytest.config import PytestPluginManager
+.venv\Lib\site-packages\_pytest\hookspec.py:28:    from _pytest.config.argparsing import Parser
+.venv\Lib\site-packages\_pytest\hookspec.py:121:    The config object is passed around on many internal objects via the ``.config``
+.venv\Lib\site-packages\_pytest\junitxml.py:26:from _pytest.config import Config
+.venv\Lib\site-packages\_pytest\junitxml.py:27:from _pytest.config import filename_arg
+.venv\Lib\site-packages\_pytest\junitxml.py:28:from _pytest.config.argparsing import Parser
+.venv\Lib\site-packages\_pytest\junitxml.py:312:    xml = request.config.stash.get(xml_key, None)
+.venv\Lib\site-packages\_pytest\junitxml.py:365:    xml = request.config.stash.get(xml_key, None)
+.venv\Lib\site-packages\_pytest\junitxml.py:415:    xml = request.config.stash.get(xml_key, None)
+.venv\Lib\site-packages\_pytest\legacypath.py:19:from _pytest.config import Config
+.venv\Lib\site-packages\_pytest\legacypath.py:20:from _pytest.config import hookimpl
+.venv\Lib\site-packages\_pytest\legacypath.py:21:from _pytest.config import PytestPluginManager
+.venv\Lib\site-packages\_pytest\legacypath.py:302:        return request.config._tmpdirhandler  # type: ignore
+.venv\Lib\site-packages\_pytest\logging.py:31:from _pytest.config import _strtobool
+.venv\Lib\site-packages\_pytest\logging.py:32:from _pytest.config import Config
+.venv\Lib\site-packages\_pytest\logging.py:33:from _pytest.config import create_terminal_writer
+.venv\Lib\site-packages\_pytest\logging.py:34:from _pytest.config import hookimpl
+.venv\Lib\site-packages\_pytest\logging.py:35:from _pytest.config import UsageError
+.venv\Lib\site-packages\_pytest\logging.py:36:from _pytest.config.argparsing import Parser
+.venv\Lib\site-packages\_pytest\logging.py:820:        if session.config.option.collectonly:
+.venv\Lib\site-packages\_pytest\main.py:29:from _pytest.config import Config
+.venv\Lib\site-packages\_pytest\main.py:30:from _pytest.config import directory_arg
+.venv\Lib\site-packages\_pytest\main.py:31:from _pytest.config import ExitCode
+.venv\Lib\site-packages\_pytest\main.py:32:from _pytest.config import hookimpl
+.venv\Lib\site-packages\_pytest\main.py:33:from _pytest.config import PytestPluginManager
+.venv\Lib\site-packages\_pytest\main.py:34:from _pytest.config import UsageError
+.venv\Lib\site-packages\_pytest\main.py:35:from _pytest.config.argparsing import OverrideIniAction
+.venv\Lib\site-packages\_pytest\main.py:36:from _pytest.config.argparsing import Parser
+.venv\Lib\site-packages\_pytest\main.py:401:    if session.testsfailed and not session.config.option.continue_on_collection_errors:
+.venv\Lib\site-packages\_pytest\main.py:406:    if session.config.option.collectonly:
+.venv\Lib\site-packages\_pytest\main.py:411:        item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
+.venv\Lib\site-packages\_pytest\main.py:568:        config = self.config
+.venv\Lib\site-packages\_pytest\main.py:630:        self.config.pluginmanager.register(self, name="session")
+.venv\Lib\site-packages\_pytest\main.py:687:        return self.config.invocation_params.dir
+.venv\Lib\site-packages\_pytest\main.py:704:            maxfail = self.config.getvalue("maxfail")
+.venv\Lib\site-packages\_pytest\main.py:737:        pm = self.config.pluginmanager
+.venv\Lib\site-packages\_pytest\main.py:748:            proxy = self.config.hook
+.venv\Lib\site-packages\_pytest\main.py:809:            args = self.config.args
+.venv\Lib\site-packages\_pytest\main.py:814:        hook = self.config.hook
+.venv\Lib\site-packages\_pytest\main.py:821:        consider_namespace_packages: bool = self.config.getini(
+.venv\Lib\site-packages\_pytest\main.py:830:                    self.config.invocation_params.dir,
+.venv\Lib\site-packages\_pytest\main.py:833:                    as_pypath=self.config.option.pyargs,
+.venv\Lib\site-packages\_pytest\main.py:839:            if not self.config.getoption("keepduplicates"):
+.venv\Lib\site-packages\_pytest\main.py:874:            self.config.pluginmanager.check_pending()
+.venv\Lib\site-packages\_pytest\main.py:876:                session=self, config=self.config, items=items
+.venv\Lib\site-packages\_pytest\main.py:932:        pm = self.config.pluginmanager
+.venv\Lib\site-packages\_pytest\main.py:966:            # and discarding all nodes which don't match the level's part.
+.venv\Lib\site-packages\_pytest\main.py:981:                # Should have been matched by now, discard.
+.venv\Lib\site-packages\_pytest\mark\__init__.py:24:from _pytest.config import Config
+.venv\Lib\site-packages\_pytest\mark\__init__.py:25:from _pytest.config import ExitCode
+.venv\Lib\site-packages\_pytest\mark\__init__.py:26:from _pytest.config import hookimpl
+.venv\Lib\site-packages\_pytest\mark\__init__.py:27:from _pytest.config import UsageError
+.venv\Lib\site-packages\_pytest\mark\__init__.py:28:from _pytest.config.argparsing import Parser
+.venv\Lib\site-packages\_pytest\mark\__init__.py:136:    import _pytest.config
+.venv\Lib\site-packages\_pytest\mark\__init__.py:140:        tw = _pytest.config.create_terminal_writer(config)
+.venv\Lib\site-packages\_pytest\mark\structures.py:28:from _pytest.config import Config
+.venv\Lib\site-packages\_pytest\nodes.py:32:from _pytest.config import Config
+.venv\Lib\site-packages\_pytest\nodes.py:33:from _pytest.config import ConftestImportFailure
+.venv\Lib\site-packages\_pytest\nodes.py:167:            self.config: Config = config
+.venv\Lib\site-packages\_pytest\nodes.py:171:            self.config = parent.config
+.venv\Lib\site-packages\_pytest\nodes.py:445:        if self.config.getoption("fulltrace", False):
+.venv\Lib\site-packages\_pytest\nodes.py:454:            if self.config.getoption("tbstyle", "auto") == "short":
+.venv\Lib\site-packages\_pytest\nodes.py:459:        if self.config.get_verbosity() > 1:
+.venv\Lib\site-packages\_pytest\nodes.py:464:        truncate_args = False if self.config.get_verbosity() > 2 else True
+.venv\Lib\site-packages\_pytest\nodes.py:473:            abspath = Path(os.getcwd()) != self.config.invocation_params.dir
+.venv\Lib\site-packages\_pytest\nodes.py:480:            showlocals=self.config.getoption("showlocals", False),
+.venv\Lib\site-packages\_pytest\nodes.py:543:        if isinstance(excinfo.value, self.CollectError) and not self.config.getoption(
+.venv\Lib\site-packages\_pytest\nodes.py:551:        tbstyle = self.config.getoption("tbstyle", "auto")
+.venv\Lib\site-packages\_pytest\nodes.py:623:                    self.path.relative_to(session.config.rootpath)
+.venv\Lib\site-packages\_pytest\pastebin.py:10:from _pytest.config import Config
+.venv\Lib\site-packages\_pytest\pastebin.py:11:from _pytest.config import create_terminal_writer
+.venv\Lib\site-packages\_pytest\pastebin.py:12:from _pytest.config.argparsing import Parser
+.venv\Lib\site-packages\_pytest\pastebin.py:106:    if terminalreporter.config.option.pastebin != "failed":
+.venv\Lib\site-packages\_pytest\pastebin.py:116:            tw = create_terminal_writer(terminalreporter.config, file)
+.venv\Lib\site-packages\_pytest\pytester.py:47:from _pytest.config import _PluggyPlugin
+.venv\Lib\site-packages\_pytest\pytester.py:48:from _pytest.config import Config
+.venv\Lib\site-packages\_pytest\pytester.py:49:from _pytest.config import ExitCode
+.venv\Lib\site-packages\_pytest\pytester.py:50:from _pytest.config import hookimpl
+.venv\Lib\site-packages\_pytest\pytester.py:51:from _pytest.config import main
+.venv\Lib\site-packages\_pytest\pytester.py:52:from _pytest.config import PytestPluginManager
+.venv\Lib\site-packages\_pytest\pytester.py:53:from _pytest.config.argparsing import Parser
+.venv\Lib\site-packages\_pytest\pytester.py:505:    from _pytest.config import get_config
+.venv\Lib\site-packages\_pytest\pytester.py:710:        self._method = self._request.config.getoption("--runpytest")
+.venv\Lib\site-packages\_pytest\pytester.py:968:        example_dir_ = self._request.config.getini("pytester_example_dir")
+.venv\Lib\site-packages\_pytest\pytester.py:971:        example_dir: Path = self._request.config.rootpath / example_dir_
+.venv\Lib\site-packages\_pytest\pytester.py:1250:        This invokes the pytest bootstrapping code in _pytest.config to create a
+.venv\Lib\site-packages\_pytest\pytester.py:1258:        import _pytest.config
+.venv\Lib\site-packages\_pytest\pytester.py:1262:        config = _pytest.config._prepareconfig(new_args, self.plugins)
+.venv\Lib\site-packages\_pytest\pytester.py:1342:        self.config = config = self.parseconfigure(path, *configargs)
+.venv\Lib\site-packages\_pytest\python.py:54:from _pytest.config import Config
+.venv\Lib\site-packages\_pytest\python.py:55:from _pytest.config import hookimpl
+.venv\Lib\site-packages\_pytest\python.py:56:from _pytest.config import UsageError
+.venv\Lib\site-packages\_pytest\python.py:57:from _pytest.config.argparsing import Parser
+.venv\Lib\site-packages\_pytest\python.py:219:                file_path, parent.config.getini("python_files")
+.venv\Lib\site-packages\_pytest\python.py:408:        for option in self.config.getini(option_name):
+.venv\Lib\site-packages\_pytest\python.py:434:        collect_imported_tests = self.session.config.getini("collect_imported_tests")
+.venv\Lib\site-packages\_pytest\python.py:486:            config=self.config,
+.venv\Lib\site-packages\_pytest\python.py:581:        return importtestmodule(self.path, self.config)
+.venv\Lib\site-packages\_pytest\python.py:698:        init_mod = importtestmodule(self.path / "__init__.py", self.config)
+.venv\Lib\site-packages\_pytest\python.py:720:        config = self.config
+.venv\Lib\site-packages\_pytest\python.py:987:        if self.config is None:
+.venv\Lib\site-packages\_pytest\python.py:989:        strict_parametrization_ids = self.config.getini("strict_parametrization_ids")
+.venv\Lib\site-packages\_pytest\python.py:991:            strict_parametrization_ids = self.config.getini("strict")
+.venv\Lib\site-packages\_pytest\python.py:1002:                    yield _ascii_escaped_by_config(parameterset.id, self.config)
+.venv\Lib\site-packages\_pytest\python.py:1037:        if not self.config:
+.venv\Lib\site-packages\_pytest\python.py:1039:        value = self.config.getini("parametrize_long_str_id_strategy")
+.venv\Lib\site-packages\_pytest\python.py:1056:            return _ascii_escaped_by_config(val, self.config)
+.venv\Lib\site-packages\_pytest\python.py:1059:                return _ascii_escaped_by_config(val, self.config)
+.venv\Lib\site-packages\_pytest\python.py:1094:        if self.config:
+.venv\Lib\site-packages\_pytest\python.py:1095:            id: str | None = self.config.hook.pytest_make_parametrize_id(
+.venv\Lib\site-packages\_pytest\python.py:1096:                config=self.config, val=val, argname=argname
+.venv\Lib\site-packages\_pytest\python.py:1106:                return _ascii_escaped_by_config(val, self.config)
+.venv\Lib\site-packages\_pytest\python.py:1245:            config=node.config,
+.venv\Lib\site-packages\_pytest\python.py:1286:        self.config = config
+.venv\Lib\site-packages\_pytest\python.py:1400:            self.config,
+.venv\Lib\site-packages\_pytest\python.py:1543:            self.config,
+.venv\Lib\site-packages\_pytest\python.py:1804:        if hasattr(self, "_obj") and not self.config.getoption("fulltrace", False):
+.venv\Lib\site-packages\_pytest\python.py:1819:            if self.config.getoption("tbstyle", "auto") == "auto":
+.venv\Lib\site-packages\_pytest\python.py:1837:        style = self.config.getoption("tbstyle", "auto")
+.venv\Lib\site-packages\_pytest\raises.py:498:            from _pytest.config import Config
+.venv\Lib\site-packages\_pytest\raises.py:671:            # If no flags were specified, discard the redundant re.compile() here.
+.venv\Lib\site-packages\_pytest\raises.py:1061:            # If no flags were specified, discard the redundant re.compile() here.
+.venv\Lib\site-packages\_pytest\reports.py:32:from _pytest.config import Config
+.venv\Lib\site-packages\_pytest\reports.py:286:            excinfo, style=item.config.getoption("tbstyle", "auto")
+.venv\Lib\site-packages\_pytest\runner.py:19:from .config import Config
+.venv\Lib\site-packages\_pytest\runner.py:28:from _pytest.config.argparsing import Parser
+.venv\Lib\site-packages\_pytest\runner.py:73:    durations = terminalreporter.config.option.durations
+.venv\Lib\site-packages\_pytest\runner.py:74:    durations_min = terminalreporter.config.option.durations_min
+.venv\Lib\site-packages\_pytest\runner.py:75:    verbose = terminalreporter.config.get_verbosity()
+.venv\Lib\site-packages\_pytest\runner.py:99:            if terminalreporter.config.option.durations_min is None:
+.venv\Lib\site-packages\_pytest\runner.py:135:            setup_only = item.config.getoption("setuponly", False)
+.venv\Lib\site-packages\_pytest\runner.py:136:            if item.config.getoption("setupshow", False):
+.venv\Lib\site-packages\_pytest\runner.py:156:    tw = item.config.get_terminal_writer()
+.venv\Lib\site-packages\_pytest\runner.py:252:        reraise=get_reraise_exceptions(item.config),
+.venv\Lib\site-packages\_pytest\runner.py:397:            collector.config.pluginmanager._loadconftestmodules(
+.venv\Lib\site-packages\_pytest\runner.py:399:                collector.config.getoption("importmode"),
+.venv\Lib\site-packages\_pytest\runner.py:400:                rootpath=collector.config.rootpath,
+.venv\Lib\site-packages\_pytest\runner.py:401:                consider_namespace_packages=collector.config.getini(
+.venv\Lib\site-packages\_pytest\setuponly.py:6:from _pytest.config import Config
+.venv\Lib\site-packages\_pytest\setuponly.py:7:from _pytest.config import ExitCode
+.venv\Lib\site-packages\_pytest\setuponly.py:8:from _pytest.config.argparsing import Parser
+
+[Showing results with pagination = limit: 250]
